@@ -1,0 +1,19 @@
+version: "3.8"
+
+services:
+  image-cdn:
+    container_name: image-cdn-server
+    build: .
+    ports:
+      - "${APP_PORT}:8181"
+    volumes:
+      - ./uploads:/root/uploads  # Persist uploaded images
+    environment:
+      APP_PORT: ${APP_PORT}
+      JWT_SECRET: ${JWT_SECRET}
+      REDIS_HOST: ${REDIS_HOST}
+      REDIS_PORT: ${REDIS_PORT}
+      REDIS_DB: ${REDIS_DB}
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      UPLOAD_DIR: ${UPLOAD_DIR}  # Set the upload directory
+    restart: always

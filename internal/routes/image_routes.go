@@ -8,7 +8,7 @@ import (
 
 func ImageRoutes(r *gin.Engine, middleware config.Middleware, controller controller.ImageController) {
 
-	routerGroup := r.Group("/cdn-service/v1/image")
+	routerGroup := r.Group("/v1")
 	routerGroup.Use(middleware.AuthMiddleware.Handler())
 	{
 		routerGroup.POST("/upload", controller.UploadImage)
