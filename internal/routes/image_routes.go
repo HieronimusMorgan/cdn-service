@@ -11,7 +11,7 @@ func ImageRoutes(r *gin.Engine, middleware config.Middleware, controller control
 	routerGroup := r.Group("/v1")
 	routerGroup.Use(middleware.AuthMiddleware.Handler())
 	{
-		routerGroup.POST("/upload", controller.UploadImage)
+		routerGroup.POST("/upload", controller.UploadImages)
 		routerGroup.GET("/cdn/:clientID/:filename", controller.GetImage)
 	}
 }

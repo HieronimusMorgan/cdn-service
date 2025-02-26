@@ -1,21 +1,22 @@
 package services
 
 import (
+	response "cdn-service/internal/dto/out"
 	"cdn-service/internal/utils"
 	"errors"
-	"github.com/google/uuid"
-	"golang.org/x/image/draw"
-	"image"
-	"image/jpeg"
-	"image/png"
+	"fmt"
+	"github.com/rs/zerolog/log"
+	"io"
 	"mime/multipart"
 	"os"
 	"path/filepath"
+	"strings"
+	"time"
 )
 
 // ImageService defines the interface for managing asset categories
 type ImageService interface {
-	UploadImage(file *multipart.FileHeader, clientID string) (interface{}, error)
+	UploadImages(files []*multipart.FileHeader, clientID string) ([]response.ImageResponse, error)
 	GetImage(imageUrl, clientID string) (*string, error)
 }
 
@@ -31,72 +32,73 @@ func NewImageService(redis utils.RedisService) ImageService {
 	}
 }
 
-// UploadImage uploads an image for a specific client
-func (s *imageService) UploadImage(file *multipart.FileHeader, clientID string) (interface{}, error) {
-	if clientID == "" {
-		return nil, errors.New("clientID is required")
-	}
+func (s *imageService) UploadImages(files []*multipart.FileHeader, clientID string) ([]response.ImageResponse, error) {
+	var uploadedImages []response.ImageResponse
+	uploadDir := filepath.Join("./uploads", clientID)
 
-	clientDir := filepath.Join(utils.UploadDir, clientID)
-
+	log.Info().Msgf("Uploading %d images for client: %s", len(files), clientID)
 	// Ensure client directory exists
-	if err := os.MkdirAll(clientDir, os.ModePerm); err != nil {
-		return nil, err
-	}
-
-	// Open the uploaded file
-	src, err := file.Open()
-	if err != nil {
-		return nil, err
-	}
-	defer func() {
-		if err := src.Close(); err != nil {
-			// Log the error instead of ignoring it
-			// log.Println("Error closing src file:", err)
-		}
-	}()
-
-	// Decode image
-	img, format, err := image.Decode(src)
-	if err != nil {
-		return nil, err
-	}
-
-	// Resize Image
-	dst := image.NewRGBA(image.Rect(0, 0, 800, 600)) // Resize to 800x600
-	draw.ApproxBiLinear.Scale(dst, dst.Bounds(), img, img.Bounds(), draw.Over, nil)
-
-	// Generate unique filename
-	newFileName := uuid.New().String() + "." + format
-	filePath := filepath.Join(clientDir, newFileName)
-
-	// Create file to save the optimized image
-	out, err := os.Create(filePath)
-	if err != nil {
-		return nil, err
-	}
-	defer func() {
-		if err := out.Close(); err != nil {
-			// log.Println("Error closing output file:", err)
-		}
-	}()
-
-	// Encode and save image
-	switch format {
-	case "png":
-		if err := png.Encode(out, dst); err != nil {
+	if _, err := os.Stat(uploadDir); os.IsNotExist(err) {
+		err := os.MkdirAll(uploadDir, os.ModePerm)
+		if err != nil {
+			log.Error().Err(err).Msg("Failed to create directory")
 			return nil, err
 		}
-	case "jpeg", "jpg":
-		if err := jpeg.Encode(out, dst, &jpeg.Options{Quality: 80}); err != nil {
-			return nil, err
-		}
-	default:
-		return nil, errors.New("unsupported image format: " + format)
 	}
 
-	// Return URL path
-	return "/cdn/" + clientID + "/" + newFileName, nil
+	// Process each file
+	for _, file := range files {
+		// Open file
+		src, err := file.Open()
+		if err != nil {
+			return nil, err
+		}
+		defer func(src multipart.File) {
+			err := src.Close()
+			if err != nil {
+				log.Error().Err(err).Msg("Failed to close file")
+				return
+			}
+		}(src)
+
+		// Generate safe filename
+		extension := strings.ToLower(filepath.Ext(file.Filename))
+		newFileName := fmt.Sprintf("%d%s", time.Now().UnixNano(), extension)
+		filePath := filepath.Join(uploadDir, newFileName)
+
+		// Create destination file
+		dst, err := os.Create(filePath)
+		if err != nil {
+			return nil, err
+		}
+		defer func(dst *os.File) {
+			err := dst.Close()
+			if err != nil {
+				log.Error().Err(err).Msg("Failed to close file")
+				return
+			}
+		}(dst)
+
+		// Copy file data
+		fileSize, err := io.Copy(dst, src)
+		if err != nil {
+			return nil, err
+		}
+		log.Info().Msgf("File uploaded: %s (%d bytes)", newFileName, fileSize)
+
+		// Get file metadata
+		imageResponse := response.ImageResponse{
+			ImageURL:   fmt.Sprintf("/cdn/%s/%s", clientID, newFileName), // Serve via API
+			FileType:   strings.TrimPrefix(extension, "."),               // Remove dot (jpg, png)
+			FileSize:   fileSize,
+			UploadedAt: time.Now(),
+		}
+
+		// Append to response
+		uploadedImages = append(uploadedImages, imageResponse)
+	}
+
+	return uploadedImages, nil
 }
 
 func (s *imageService) GetImage(imageUrl, clientID string) (*string, error) {

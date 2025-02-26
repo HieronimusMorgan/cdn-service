@@ -4,12 +4,13 @@ import (
 	"cdn-service/internal/services"
 	"cdn-service/internal/utils"
 	"github.com/gin-gonic/gin"
+	"github.com/rs/zerolog/log"
 	"net/http"
 	"strings"
 )
 
 type ImageController interface {
-	UploadImage(context *gin.Context)
+	UploadImages(context *gin.Context)
 	GetImage(context *gin.Context)
 }
 
@@ -22,24 +23,42 @@ func NewImageController(imageService services.ImageService, jwtService utils.JWT
 	return imageController{ImageService: imageService, JWTService: jwtService}
 }
 
-func (h imageController) UploadImage(context *gin.Context) {
-	file, err := context.FormFile("image")
+func (h imageController) UploadImages(context *gin.Context) {
+	// Parse form data
+	err := context.Request.ParseMultipartForm(10 << 20) // 10MB limit
 	if err != nil {
-		context.JSON(http.StatusBadRequest, gin.H{"error": "No file uploaded"})
+		log.Error().Err(err).Msg("Failed to parse form")
+		context.JSON(http.StatusBadRequest, gin.H{"error": "Failed to parse form"})
 		return
 	}
 
+	// Extract JWT Token
 	token, err := h.JWTService.ExtractClaims(context.GetHeader(utils.Authorization))
 	if err != nil {
+		log.Error().Err(err).Msg("Invalid token")
+		context.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
 		return
 	}
 
-	image, err := h.ImageService.UploadImage(file, token.ClientID)
-	if err != nil {
-		context.JSON(500, gin.H{"error": err.Error()})
+	// Get multiple files from the form
+	form, _ := context.MultipartForm()
+	files := form.File["images"] // Get all uploaded images
+	log.Info().Msgf("Uploading %d images", len(files))
+	// If no images are uploaded
+	if len(files) == 0 {
+		context.JSON(http.StatusBadRequest, gin.H{"error": "No files uploaded"})
 		return
 	}
-	context.JSON(201, gin.H{"data": image})
+
+	// Call service to upload images
+	uploadedImages, err := h.ImageService.UploadImages(files, token.ClientID)
+	if err != nil {
+		context.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Return uploaded images response
+	context.JSON(http.StatusCreated, gin.H{"data": uploadedImages})
 }
 
 func (h imageController) GetImage(context *gin.Context) {

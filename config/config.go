@@ -22,6 +22,7 @@ type Config struct {
 	RedisPort string `envconfig:"REDIS_PORT" default:"6379"`
 	RedisDB   int    `envconfig:"REDIS_DB" default:"0"`
 	RedisPass string `envconfig:"REDIS_PASSWORD" default:""`
+	Nats      string `envconfig:"NATS_URL" default:"nats://localhost:4222"`
 }
 
 func initDir() {

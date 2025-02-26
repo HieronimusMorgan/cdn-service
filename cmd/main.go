@@ -19,12 +19,7 @@ func main() {
 	engine := serverConfig.Gin
 
 	routes.ImageRoutes(engine, serverConfig.Middleware, serverConfig.Controller.ImageController)
-	//assets.AssetCategoryRoutes(engine, serverConfig.Middleware, serverConfig.Controller.AssetCategory)
-	//assets.AssetStatusRoutes(engine, serverConfig.Middleware, serverConfig.Controller.AssetStatus)
-	//assets.AssetRoutes(engine, serverConfig.Middleware, serverConfig.Controller.Asset)
-	//assets.AssetWishlistRoutes(engine, serverConfig.Middleware, serverConfig.Controller.AssetWishlist)
-	//assets.AssetMaintenanceRoutes(engine, serverConfig.Middleware, serverConfig.Controller.AssetMaintenance)
-	//assets.AssetMaintenanceTypeRoutes(engine, serverConfig.Middleware, serverConfig.Controller.AssetMaintenanceType)
+
 	// Run server
 	log.Println("Starting server on :8181")
 	err = engine.Run(":8181")

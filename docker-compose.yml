@@ -16,4 +16,5 @@ services:
       REDIS_DB: ${REDIS_DB}
       REDIS_PASSWORD: ${REDIS_PASSWORD}
       UPLOAD_DIR: ${UPLOAD_DIR}  # Set the upload directory
+      NATS_URL: ${NATS_URL}
     restart: always
