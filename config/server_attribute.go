@@ -60,7 +60,7 @@ func (s *ServerConfig) initRepository() {
 // initServices initializes the application services
 func (s *ServerConfig) initServices() {
 	s.Services = Services{
-		ImageService: services.NewImageService(s.Redis),
+		ImageService: services.NewImageService(s.Redis, s.Config.UploadDir, s.Config.ProfileUploadDir),
 	}
 }
 

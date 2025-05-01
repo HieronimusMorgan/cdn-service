@@ -7,7 +7,8 @@ services:
     ports:
       - "${APP_PORT}:8181"
     volumes:
-      - ./uploads:/root/uploads  # Persist uploaded images
+      - ./asset:/root/image/asset
+      - ./profile:/root/image/profile
     environment:
       APP_PORT: ${APP_PORT}
       JWT_SECRET: ${JWT_SECRET}
@@ -15,6 +16,7 @@ services:
       REDIS_PORT: ${REDIS_PORT}
       REDIS_DB: ${REDIS_DB}
       REDIS_PASSWORD: ${REDIS_PASSWORD}
-      UPLOAD_DIR: ${UPLOAD_DIR}  # Set the upload directory
+      UPLOAD_DIR: ${UPLOAD_DIR}
+      PROFILE_UPLOAD_DIR: ${PROFILE_UPLOAD_DIR}
       NATS_URL: ${NATS_URL}
     restart: always

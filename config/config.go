@@ -16,13 +16,15 @@ import (
 
 // Config holds application-wide configurations
 type Config struct {
-	AppPort   string `envconfig:"APP_PORT" default:"8181"`
-	JWTSecret string `envconfig:"JWT_SECRET" default:"a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6"`
-	RedisHost string `envconfig:"REDIS_HOST" default:"localhost"`
-	RedisPort string `envconfig:"REDIS_PORT" default:"6379"`
-	RedisDB   int    `envconfig:"REDIS_DB" default:"0"`
-	RedisPass string `envconfig:"REDIS_PASSWORD" default:""`
-	Nats      string `envconfig:"NATS_URL" default:"nats://localhost:4222"`
+	AppPort          string `envconfig:"APP_PORT" default:"8181"`
+	JWTSecret        string `envconfig:"JWT_SECRET" default:"a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6"`
+	RedisHost        string `envconfig:"REDIS_HOST" default:"localhost"`
+	RedisPort        string `envconfig:"REDIS_PORT" default:"6379"`
+	RedisDB          int    `envconfig:"REDIS_DB" default:"0"`
+	RedisPass        string `envconfig:"REDIS_PASSWORD" default:""`
+	Nats             string `envconfig:"NATS_URL" default:"nats://localhost:4222"`
+	UploadDir        string `envconfig:"UPLOAD_DIR" default:"/tmp/uploads"`
+	ProfileUploadDir string `envconfig:"PROFILE_UPLOAD_DIR" default:"/tmp/uploads/profile"`
 }
 
 func initDir() {

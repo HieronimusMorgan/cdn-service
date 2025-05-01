@@ -10,6 +10,7 @@ import (
 )
 
 type ImageController interface {
+	UploadPhotoProfile(context *gin.Context)
 	UploadImages(context *gin.Context)
 	GetImage(context *gin.Context)
 }
@@ -21,6 +22,32 @@ type imageController struct {
 
 func NewImageController(imageService services.ImageService, jwtService utils.JWTService) ImageController {
 	return imageController{ImageService: imageService, JWTService: jwtService}
+}
+
+func (h imageController) UploadPhotoProfile(context *gin.Context) {
+	token, err := h.JWTService.ExtractClaims(context.GetHeader(utils.Authorization))
+	if err != nil {
+		log.Error().Err(err).Msg("Invalid token")
+		context.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
+		return
+	}
+
+	file, err := context.FormFile("image") // 🔁 field must be "image"
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to get file from form")
+		context.JSON(http.StatusBadRequest, gin.H{"error": "Failed to get file from form"})
+		return
+	}
+
+	log.Info().Msgf("Uploading image: %s", file.Filename)
+
+	imageURL, err := h.ImageService.UploadPhotoProfile(file, token.ClientID)
+	if err != nil {
+		context.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	context.JSON(http.StatusCreated, gin.H{"data": imageURL})
 }
 
 func (h imageController) UploadImages(context *gin.Context) {
